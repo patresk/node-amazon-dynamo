@@ -2,13 +2,15 @@ version: "2"
 
 services:
   app:
-    image: tutum/hello-world:latest
+    image: evo9192/node:trusty
     environment:
       SERVICE_80_NAME: http
       SERVICE_NAME: app
       SERVICE_TAGS: production
     ports:
     - "80"
+    volumes:
+    - "/workspace/node-amazon-dynamo/app:/dynamo/app"
 
   consul:
     command: -server -advertise 192.168.1.9 -join 192.168.1.10

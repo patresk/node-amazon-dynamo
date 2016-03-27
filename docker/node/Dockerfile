@@ -32,11 +32,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	&& tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 \
 	&& rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
 	&& apt-get purge -y --auto-remove $buildDeps \
-	&& mkdir /workspace
+	&& mkdir -p /dynamo/app
 
 RUN curl -L -O https://download.elastic.co/beats/filebeat/filebeat_1.1.2_amd64.deb \
 	&& sudo dpkg -i filebeat_1.1.2_amd64.deb
 
-WORKDIR /dynamo
+WORKDIR /dynamo/app
 
 CMD [ "npm", "start" ]

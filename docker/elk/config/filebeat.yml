@@ -2,7 +2,7 @@ filebeat:
     prospectors:
         -
             paths:
-                - "/dynamo/*.log"
+                - "/dynamo/logs/*.log"
             document_type: app
 output:
     logstash:
