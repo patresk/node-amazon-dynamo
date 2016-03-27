@@ -46,7 +46,7 @@ git clone https://github.com/patresk/node-amazon-dynamo.git
 /workspace/node-amazon-dynamo/docker/elk/config
 ```
 
-### Running
+#### Running
 
 ```bash
 docker-compose -f /workspace/node-amazon-dynamo/docker/elk/elk.yml up
