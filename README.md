@@ -35,3 +35,31 @@ mkdir -p /workspace
 cd /workspace
 git clone https://github.com/patresk/node-amazon-dynamo.git
 ```
+
+## Running application
+
+### ELK stack
+
+#### Configuration location
+
+```bash
+/workspace/node-amazon-dynamo/docker/elk/config
+```
+
+### Running
+
+```bash
+docker-compose -f /workspace/node-amazon-dynamo/docker/elk/elk.yml up
+```
+
+### MASTER NODE: loadbalancer + consul(master) + registrator + application
+
+```bash
+docker-compose -f /workspace/node-amazon-dynamo/docker/master.yml
+```
+
+### Other nodes: consul + registrator + application
+
+```bash
+docker-compose -f /workspace/node-amazon-dynamo/docker/node.yml
+```
