@@ -1,0 +1,11 @@
+filebeat:
+    prospectors:
+        -
+            paths:
+                - "/dynamo/*.log"
+            document_type: app
+output:
+    logstash:
+        enabled: true
+        hosts: ["192.168.1.10:5000"]
+        index: logstash

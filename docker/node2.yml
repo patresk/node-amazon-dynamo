@@ -1,0 +1,31 @@
+version: "2"
+
+services:
+  app:
+    image: tutum/hello-world:latest
+    environment:
+      SERVICE_80_NAME: http
+      SERVICE_NAME: app
+      SERVICE_TAGS: production
+    ports:
+    - "80"
+
+  consul:
+    command: -server -advertise 192.168.1.9 -join 192.168.1.10
+    image: progrium/consul:latest
+    ports:
+    - "8300:8300"
+    - "8301:8301"
+    - "8301:8301/udp"
+    - "8400:8400"
+    - "8500:8500"
+    - "8600:53/udp"
+
+  registrator:
+    command: consul://consul:8500
+    image: gliderlabs/registrator:latest
+    links:
+    - consul
+    volumes:
+    - "/var/run/docker.sock:/tmp/docker.sock"
+
