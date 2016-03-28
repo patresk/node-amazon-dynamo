@@ -3,30 +3,41 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 
+const logger = require('./logger')
+
 const app = express()
+const router = express.Router()
 
-app.get('/:id', function(req, res) {
+router.get('/v1/:id', function(req, res) {
+  if (!req.params.id) {
+    return res.status(500).send()
+  }
+  // Set correlation ID from reqeust or create a new one
+  const corId = req.get('x-correlation-id') || Date.now()
   // Todo: implement
   res.status(200).send()
 })
 
-app.post('/:id', function(req, res) {
+router.put('/v1/:id', function(req, res) {
   // Todo: implement
   res.status(200).send()
 })
 
-app.put('/:id', function(req, res) {
+router.post('/v1/:id', function(req, res) {
   // Todo: implement
   res.status(200).send()
 })
 
-app.delete('/:id', function(req, res) {
+router.delete('/v1/:id', function(req, res) {
   // Todo: implement
   res.status(200).send()
 })
 
-app.use(function(err, req, res) {
-  console.error('Uncaught error:', err, err.stack)
+app.use(router)
+
+app.use(function(err, req, res, next) {
+  const corId = req.get('x-correlation-id')
+  logger.info('[corId=' + corId + ']', 'Uncaught error happend', err)
   res.status(500).send()
 })
 
