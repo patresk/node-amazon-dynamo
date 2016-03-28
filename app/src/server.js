@@ -30,6 +30,6 @@ app.use(function(err, req, res) {
   res.status(500).send()
 })
 
-app.listen(process.env.PORT || 3001, function() {
-  console.log('Node listening on http://localhost:' + (process.env.PORT || 3001))
+app.listen(process.env.PORT || 80, function() {
+  console.log('Node listening on http://localhost:' + (process.env.PORT || 80))
 })
