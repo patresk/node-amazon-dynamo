@@ -66,7 +66,7 @@ subl /workspace/node-amazon-dynamo/docker/master.yml
 #### Running
 
 ```bash
-docker-compose -f /workspace/node-amazon-dynamo/docker/master.yml
+docker-compose -f /workspace/node-amazon-dynamo/docker/master.yml up
 ```
 
 ### Other nodes: consul + registrator + application
@@ -83,5 +83,5 @@ subl /workspace/node-amazon-dynamo/docker/node.yml
 #### Running
 
 ```bash
-docker-compose -f /workspace/node-amazon-dynamo/docker/node.yml
+docker-compose -f /workspace/node-amazon-dynamo/docker/node.yml up
 ```
