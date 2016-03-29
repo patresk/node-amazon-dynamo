@@ -8,8 +8,8 @@ log4js.configure({
       category: 'Dynamo node'
     },
     {
-      host: '127.0.0.1',
-      port: 10001,
+      host: '192.168.99.100',
+      port: 5000,
       type: 'logstashUDP',
       fields: {
         hostName: 'default'
