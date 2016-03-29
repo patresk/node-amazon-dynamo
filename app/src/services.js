@@ -4,7 +4,7 @@ const request = require('request-promise')
 const co = require('co')
 
 const logger = require('./logger')
-const consulUrl = 'http://192.168.99.100:8500'
+const consulUrl = 'http://consul:8500'
 
 const getNodes = function() {
   return request({
