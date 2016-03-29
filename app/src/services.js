@@ -1,24 +1,38 @@
-const request = require('request-promise')
-const logger = require('./logger')
+'use strict';
 
+const request = require('request-promise')
+const co = require('co')
+
+const logger = require('./logger')
 const consulUrl = 'http://192.168.99.100:8500'
 
-function getNodes() {
-  return new Promise((resolve, reject) => {
-    request({
-      url: consulUrl + '/v1/catalog/service/app',
-      method: 'GET',
-      json: true
-    }).then(function(response) {
-      logger.info('Fetched node list:', response)
-      resolve(response)
-    }).catch(function(err) {
-      logger.error('Error occured when fetching node list', err)
-      reject(err)
-    })
+const getNodes = function() {
+  return request({
+    url: consulUrl + '/v1/catalog/service/app',
+    method: 'GET',
+    json: true
+  })
+}
+
+const pingNode = function(address) {
+  logger.info('Sending ping request to', address)
+  return request({
+    url: 'http://' + address + '/v1/ping',
+    method: 'GET',
+    json: true
   })
 }
 
 exports.init = function() {
-  return getNodes()
+  setInterval(function() {
+    co(function* () {
+      let nodes = yield getNodes()
+      logger.info('Fetched nodes:', nodes.length)
+      nodes.forEach(node => {
+        pingNode(node.Address + ':' + node.ServicePort)
+      })
+    }).catch(function(err) {
+      logger.error('Error occured during interval check', err)
+    })
+  }, 2000)
 }

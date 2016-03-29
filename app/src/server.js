@@ -11,8 +11,13 @@ const router = express.Router()
 services.init()
 
 app.use(function(req, res, next) {
-  logger('Request recevied on url:', req.originalUrl)
+  logger.info('Request recevied on url:', req.originalUrl)
   next()
+})
+
+router.get('/v1/ping', function(req, res) {
+  logger.info('Ping request received')
+  res.status(200).send()
 })
 
 router.get('/v1/:id', function(req, res) {
