@@ -6,6 +6,9 @@ const co = require('co')
 const logger = require('./logger')
 const consulUrl = 'http://consul:8500'
 
+let myself = undefined
+let nodeList = []
+
 const getNodes = function() {
   return request({
     url: consulUrl + '/v1/catalog/service/app',
@@ -26,13 +29,30 @@ const pingNode = function(address) {
 exports.init = function() {
   setInterval(function() {
     co(function* () {
-      let nodes = yield getNodes()
-      logger.info('Fetched nodes:', nodes.length)
-      nodes.forEach(node => {
-        pingNode(node.Address + ':' + node.ServicePort)
-      })
+      const nodes = yield getNodes()
+      logger.info('Number of fetched nodes from consul:', nodes.length)
+
+      const internalNodeList = []
+
+      yield Promise.all(nodes.map(node => {
+        let address = node.Address + ':' + node.ServicePort
+        return pingNode(address)
+          .then(response => {
+            internalNodeList.push({ address: address, hostname: response.hostname, status: response.status })
+          }, response => {
+            internalNodeList.push({ address: address, hostname: response.hostname, status: 'DOWN' })
+          })
+      }))
+
+      logger.info('Ping result:',
+        internalNodeList.filter(node => node.status === 'READY').length + ' up',
+        internalNodeList.filter(node => node.status !== 'READY').length + ' other state')
+
+      nodeList = internalNodeList
+      myself = internalNodeList.filter(node => node.hostname === process.env.HOSTNAME)[0]
+      logger.info('Node indentified itself as', myself.address)
     }).catch(function(err) {
       logger.error('Error occured during interval check', err)
     })
-  }, 2000)
+  }, 5000)
 }

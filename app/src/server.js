@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express')
+const bodyParser = require('body-parser')
 
 const logger = require('./logger')
 const services = require('./services')
@@ -10,6 +11,9 @@ const router = express.Router()
 
 services.init()
 
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }))
+
 app.use(function(req, res, next) {
   logger.info('Request recevied on url:', req.originalUrl)
   next()
@@ -17,7 +21,7 @@ app.use(function(req, res, next) {
 
 router.get('/v1/ping', function(req, res) {
   logger.info('Ping request received')
-  res.status(200).send()
+  res.json({ hostname: process.env.HOSTNAME, status: 'READY' }).send()
 })
 
 router.get('/v1/:id', function(req, res) {
