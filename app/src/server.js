@@ -4,12 +4,12 @@ const express = require('express')
 const bodyParser = require('body-parser')
 
 const logger = require('./logger')
-const services = require('./services')
+const discovery = require('./discovery')
 
 const app = express()
 const router = express.Router()
 
-services.init()
+discovery.init()
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -21,7 +21,7 @@ app.use(function(req, res, next) {
 
 router.get('/v1/ping', function(req, res) {
   logger.info('Ping request received')
-  res.json({ hostname: process.env.HOSTNAME, status: 'READY' }).send()
+  res.json({ hostname: process.env.HOSTNAME, status: discovery.getState() }).send()
 })
 
 router.get('/v1/:id', function(req, res) {
