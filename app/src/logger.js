@@ -10,8 +10,9 @@ log4js.configure({
       category: loggerName
     },
     {
-      type: 'file',
-      filename: '/dynamo/logs/file.log',
+      host: '192.168.99.100',
+      port: 5000,
+      type: 'logstashUDP',
       category: loggerName
     }
   ]
