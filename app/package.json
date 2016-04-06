@@ -6,7 +6,7 @@
     "prestart": "npm install",
     "start": "mkdir -p /dynamo/logs && touch /dynamo/logs/file.log && npm run filebeat & node src/server.js",
     "filebeat": "filebeat -e -c /dynamo/filebeat.yml",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/mocha test/*.js"
   },
   "repository": {
     "type": "git",
@@ -20,9 +20,13 @@
   "homepage": "https://github.com/patresk/node-amazon-dynamo#readme",
   "dependencies": {
     "body-parser": "^1.15.0",
+    "chai": "^3.5.0",
     "co": "^4.6.0",
+    "deep-equal": "^1.0.1",
+    "expect": "^1.16.0",
     "express": "^4.13.4",
     "log4js": "^0.6.33",
+    "mocha": "^2.4.5",
     "request-promise": "^2.0.1"
   }
 }
