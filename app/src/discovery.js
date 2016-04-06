@@ -182,3 +182,17 @@ exports.addNodeToHashRing = function(node, predict) {
   const ring = predict ? Object.assign([], hashRing) : hashRing
   return util.addNodeToHashRing(ring, maxOffset, node)
 }
+
+exports.getNodeForKey = function(id) {
+  const offset = util.hash(id, maxOffset)
+  const node = util.getNodeForOffset(hashRing, offset)
+  logger.info(`Key ${id} hashed to offset ${offset} with node found: ${node}`)
+  if (node.address === myself.address) {
+    return { type: 'return' }
+  } else {
+    return {
+      type: 'forward',
+      node: node
+    }
+  }
+}

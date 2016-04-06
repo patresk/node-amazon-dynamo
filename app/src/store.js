@@ -6,10 +6,13 @@ exports.get = function(id) {
 
 exports.set = function(id, value) {
   if (store[id]) {
-    return 1
+    return null
   }
-  store[id].values = [value]
-  store[id].version = store[id].version + 1
+  store[id] = {
+    values: [value],
+    version: 1
+  }
+  return store[id]
 }
 
 exports.update = function(id, value) {
