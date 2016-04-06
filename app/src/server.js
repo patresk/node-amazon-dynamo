@@ -19,10 +19,37 @@ app.use(function(req, res, next) {
   next()
 })
 
+//
+// Internal API for node communication
+//
+
 router.get('/v1/ping', function(req, res) {
   logger.info('Ping request received')
-  res.json({ hostname: process.env.HOSTNAME, status: discovery.getState() }).send()
+  res.json({
+    hostname: process.env.HOSTNAME,
+    status: discovery.getState(),
+    ring: discovery.getRing()
+  }).send()
 })
+
+// Add a node to the hash ring
+// If a parameter predict is set to true, the hash ring is not set
+//  only is returned "how would the hash ring looks like"
+router.post('/v1/ring/add', function(req, res) {
+  logger.info('Request to add node to the ring received')
+  if (!req.body.node || !req.body.hasOwnProperty('predict')) {
+    logger.error('Received request to add node to hash ring without parameters.')
+    return res.sendStatus(500)
+  }
+  const ring = discovery.addNodeToHashRing(req.body.node, req.body.predict)
+  logger.info('Returned ring', req.body.predict, ring)
+  logger.info('Actual ring', discovery.getRing())
+  res.json({ ring: ring })
+})
+
+//
+// Public API
+//
 
 router.get('/v1/:id', function(req, res) {
   if (!req.params.id) {

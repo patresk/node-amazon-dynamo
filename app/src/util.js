@@ -1,5 +1,7 @@
 'use strict';
 
+const deepEqual = require('deep-equal')
+
 exports.addNodeToHashRing = function(hashRing, maxOffset, node) {
   if (hashRing.length === 0) {
     return [{ address: node.address, offset: 0 }]
@@ -30,4 +32,19 @@ exports.addNodeToHashRing = function(hashRing, maxOffset, node) {
   hashRing.push({ address: node.address, offset: hole.offset })
   hashRing.sort((a, b) => a.offset > b.offset)
   return hashRing
+}
+
+exports.sleep = function sleep(ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms)
+  })
+}
+
+exports.areItemsEqual = function areItemsEqual(arr) {
+  for (let i = 0; i < arr.length; i++) {
+    if (!deepEqual(arr[0], arr[i])) {
+      return false
+    }
+  }
+  return true
 }
