@@ -24,7 +24,7 @@ let state = 'NEW'
 let myself = undefined
 let nodeList = []
 let hashRing = []
-const maxOffset = 1024
+const maxOffset = config.maxOffset
 
 const getNodes = function() {
   return request({
@@ -40,7 +40,7 @@ const pingNode = function(address) {
     url: 'http://' + address + '/v1/ping',
     method: 'GET',
     json: true,
-    timeout: 2000 // Ain't nobody got time for that
+    timeout: 2000
   })
 }
 
@@ -54,7 +54,7 @@ const addNodeToRing = function(address, node, predict) {
       node: node,
       predict: predict ? true : false
     },
-    timeout: 2000 // Ain't nobody got time for that
+    timeout: 2000
   })
 }
 

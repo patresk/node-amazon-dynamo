@@ -2,6 +2,7 @@
 
 const deepEqual = require('deep-equal')
 const _ = require('lodash')
+const farmhash = require('farmhash')
 
 exports.addNodeToHashRing = function(hashRing, maxOffset, node) {
   if (hashRing.length === 0) {
@@ -94,13 +95,5 @@ exports.getReplicasForNode = function getReplicasForNode(hashRingArg, nodeAddres
 }
 
 exports.hash = function hash(string, max) {
-  max = max ? max : 50
-  var hash = 0
-  if (string.length == 0) return hash
-  for (let i = 0; i < string.length; i++) {
-    let char = string.charCodeAt(i)
-    hash = ((hash<<5) - hash) + char
-    hash = hash & hash // Convert to 32bit integer
-  }
-  return Math.abs(hash % max)
+  return farmhash.hash32(string) % max
 }
