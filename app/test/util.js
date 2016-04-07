@@ -69,4 +69,41 @@ describe('Util', function () {
     })
   })
 
+  describe('getReplicasForNode()', function() {
+    it('should return nothing if there is only one node', function() {
+      let hashRing = [ { offset: 200, address: 'a' }, { offset: 800, address: 'b' } ]
+      expect(util.getReplicasForNode(hashRing, 'a', 1)).to.deep.equal([{ offset: 800, address: 'b' }])
+    })
+
+    it('should work properly if the number requested is higher then nodes provided', function() {
+      let hashRing = [ { offset: 200, address: 'a' }, { offset: 800, address: 'b' } ]
+      expect(util.getReplicasForNode(hashRing, 'a', 3)).to.deep.equal([{ offset: 800, address: 'b' }])
+    })
+
+    it('should work properly if the hash ring is large', function() {
+      let hashRing = [
+        { offset: 100, address: 'a' },
+        { offset: 300, address: 'b' },
+        { offset: 500, address: 'c' },
+        { offset: 600, address: 'd' },
+        { offset: 900, address: 'e' },
+        { offset: 1200, address: 'f' },
+      ]
+      expect(util.getReplicasForNode(hashRing, 'a', 3)).to.deep.equal([
+        { offset: 300, address: 'b' },
+        { offset: 500, address: 'c' },
+        { offset: 600, address: 'd' }
+      ])
+      expect(util.getReplicasForNode(hashRing, 'e', 2)).to.deep.equal([
+        { offset: 1200, address: 'f' },
+        { offset: 100, address: 'a' }
+      ])
+      expect(util.getReplicasForNode(hashRing, 'f', 3)).to.deep.equal([
+        { offset: 100, address: 'a' },
+        { offset: 300, address: 'b' },
+        { offset: 500, address: 'c' }
+      ])
+    })
+  })
+
 })

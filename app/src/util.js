@@ -1,6 +1,7 @@
 'use strict';
 
 const deepEqual = require('deep-equal')
+const _ = require('lodash')
 
 exports.addNodeToHashRing = function(hashRing, maxOffset, node) {
   if (hashRing.length === 0) {
@@ -49,7 +50,7 @@ exports.areItemsEqual = function areItemsEqual(arr) {
   return true
 }
 
-exports.getNodeForOffset = function getNodeForKey(hashRing, offset) {
+exports.getNodeForOffset = function getNodeForOffset(hashRing, offset) {
   if (hashRing.length === 1) {
     return hashRing[0]
   }
@@ -63,6 +64,33 @@ exports.getNodeForOffset = function getNodeForKey(hashRing, offset) {
     found = hashRing[hashRing.length - 1]
   }
   return found
+}
+
+exports.getReplicasForNode = function getReplicasForNode(hashRingArg, nodeAddress, number) {
+  let hashRing = Object.assign([], hashRingArg)
+
+  if (hashRing.length === 1) {
+    return []
+  }
+
+  hashRing.sort((a, b) => a.offset > b.offset)
+  let nodeIndex = -1
+  hashRing.forEach((node, index) => {
+    if (node.address == nodeAddress) {
+      nodeIndex = index
+    }
+  })
+
+  // Double the hash ring co we can iterate
+  hashRing = hashRing.concat(hashRing)
+  const nodes = []
+  for (let i = 1; i <= number; i++) {
+    if (hashRing[nodeIndex + i] && hashRing[nodeIndex + i].address != nodeAddress) {
+      nodes.push(hashRing[nodeIndex + i])
+    }
+  }
+
+  return _.uniq(nodes)
 }
 
 exports.hash = function hash(string, max) {

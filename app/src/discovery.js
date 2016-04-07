@@ -17,6 +17,7 @@ const co = require('co')
 
 const logger = require('./logger')
 const util = require('./util')
+const config = require('./config')
 
 const consulUrl = 'http://consul:8500'
 let state = 'NEW'
@@ -127,14 +128,6 @@ exports.init = function init() {
             })
         }))
 
-        // Make sure the hash rings are the same from all nodes
-        if (!util.areItemsEqual(addRingResponses)) {
-          // Othrwise restart the whole init process. Something is not ouky douky
-          logger.error('Starting not successfull: different hash rings returned.')
-          logger.info('Trying to start init process again...')
-          return setTimeout(init, 1000 + Math.floor(Math.random() * 1000))
-        }
-
         // Set hash ring
         hashRing = addRingResponses[0]
       } else {
@@ -195,4 +188,13 @@ exports.getNodeForKey = function(id) {
       node: node
     }
   }
+}
+
+exports.getNodesForKey = function(id) {
+  const offset = util.hash(id, maxOffset)
+  const node = util.getNodeForOffset(hashRing, offset)
+  logger.info(`Key ${id} hashed to offset ${offset} with node found: ${node}`)
+  const replicas = util.getReplicasForNode(hashRing, node.address, config.replicas - 1)
+  logger.info(`Key ${id} hashed to offset ${offset} with replicas found: ${replicas}`)
+  return [node].concat(replicas)
 }

@@ -7,6 +7,7 @@ const request = require('request')
 const logger = require('./logger')
 const discovery = require('./discovery')
 const store = require('./store')
+const config = require('./config')
 
 const app = express()
 const router = express.Router()
@@ -49,82 +50,138 @@ router.post('/v1/ring/add', function(req, res) {
   res.json({ ring: ring })
 })
 
-//
-// Public API
-//
+// Generates a logger with correlation id and key
+function generateRequestLogger(req) {
+  const wrapper = {}
+  for (let type of ['info', 'debug', 'error']) {
+    wrapper[type] = function() {
+      let args = Array.prototype.slice.call(arguments);
+      args.unshift(`[corId=${req.corId}] [key=${req.params.key}] [method=${req.method}]`)
+      logger[type].apply(logger, args)
+    }
+  }
+  return wrapper
+}
 
-// Correlation ID middleware
 router.use(function(req, res, next) {
-  // Set correlation ID from the request or assign a new one
+  // Get correlation id from header or assign a new one
   req.corId = req.get('x-correlation-id') || Date.now()
+  req.logger = generateRequestLogger(req)
   next()
 })
 
+router.get('/v1/internal/:key', function(req, res) {
+  const value = store.get(req.params.key)
+  req.logger.info(`Value: ${value}`)
+  if (value) {
+    return res.status(200).json({ value: value })
+  }
+  return res.status(404).send()
+})
+
+router.post('/v1/internal/:key', function(req, res) {
+  req.logger.info(`This node contains a value for the key`)
+  if (!store.set(req.params.key, req.body.value)) {
+    return res.status(409).send()
+  }
+  return res.status(200).send()
+})
+
+//
+// Public API for request coordinator
+//
+
 function validationMiddleware(req, res, next) {
-  if (!req.params.id) {
+  if (!req.params.key) {
     return res.status(400).send()
   }
   next()
 }
 
-router.get('/v1/:id', validationMiddleware, function(req, res) {
-  const action = discovery.getNodeForKey(req.params.id)
+router.get('/v1/:key', validationMiddleware, function(req, res) {
+  const nodes = discovery.getNodesForKey(req.params.key)
+  const quorum = Math.min(req.query.quorum ? parseInt(req.query.quorum, 10) : config.readQuorum, config.replicas, nodes.length)
 
-  if (action.type === 'return') {
-    logger.info(`[corId=${req.corId}] [key=${req.params.id}] This node should contain the value`)
-    const value = store.get(req.params.id)
-    logger.info(`[corId=${req.corId}] [key=${req.params.id}] Value: ${value}`)
-    if (value) {
-      return res.status(200).json({ value: value })
-    }
-    return res.status(404).send()
-  }
+  const responses = []
+  let sent = false
 
-  logger.info(`[corId=${req.corId}] [key=${req.params.id}] Forwarding GET request`)
+  req.logger.info('Sending requests to nodes', nodes)
 
-  request({
-    url: 'http://' + action.node.address + '/v1/' + req.params.id,
-    method: 'GET',
-    json: true,
-    headers: { 'x-correlation-id': req.corId },
-    timeout: 4000
-  }, function(err, response, body) {
-    if (err) {
-      logger.error(`[corId=${req.corId}] [key=${req.params.id}] Forwarded GET request failed: ${err}`)
-      return res.status(500).send()
-    }
-    logger.info(`[corId=${req.corId}] [key=${req.params.id}] Forwarded GET request successful`)
-    res.status(response.statusCode).send(body)
+  nodes.forEach(node => {
+    request({
+      url: 'http://' + node.address + '/v1/internal/' + req.params.key,
+      method: 'GET',
+      json: true,
+      headers: { 'x-correlation-id': req.corId },
+      timeout: 2000
+    }, function(err, response, body) {
+      if (err) {
+        req.logger.error(`Forwarded GET request failed: ${err}`)
+        responses.push({ type: 'err', status: response.statusCode, body: body })
+      } else {
+        req.logger.info(`Forwarded GET request successful, retrieved`, body)
+        responses.push({ type: 'success', status: response.statusCode, body: body })
+      }
+      let successfulResponses = responses.filter(response => response.type === 'success')
+      if (successfulResponses.length >= quorum) {
+        if (!sent) {
+          sent = true
+          res.status(successfulResponses[0].status).json(successfulResponses)
+        }
+      }
+      if (responses.length === nodes.length) {
+        req.logger.info('All responses received.')
+        if (!sent) {
+          sent = true
+          res.status(500).json({ message: 'Quorum not fulfilled.'})
+          req.logger.error('Quorum not fulfilled')
+        }
+      }
+    })
   })
 })
 
-router.post('/v1/:id', validationMiddleware, function(req, res) {
-  const action = discovery.getNodeForKey(req.params.id)
+router.post('/v1/:key', validationMiddleware, function(req, res) {
+  const nodes = discovery.getNodesForKey(req.params.key)
+  const quorum = Math.min(req.query.quorum ? parseInt(req.query.quorum, 10) : config.readQuorum, config.replicas, nodes.length)
 
-  if (action.type === 'return') {
-    logger.info(`[corId=${req.corId}] [key=${req.params.id}] This node contains a value for the key`)
-    if (!store.set(req.params.id, req.body.value)) {
-      return res.status(409).send()
-    }
-    return res.status(200).send()
-  }
+  const responses = []
+  let sent = false
 
-  logger.info(`[corId=${req.corId}] [key=${req.params.id}] Forwarding POST request for key`)
+  req.logger.info(`Sending requests to ${nodes.length} nodes`)
 
-  request({
-    url: 'http://' + action.node.address  + '/v1/' + req.params.id,
-    method: 'POST',
-    json: true,
-    headers: { 'x-correlation-id': req.corId },
-    body: req.body,
-    timeout: 4000
-  }, function(err, response, body) {
-    if (err) {
-      logger.error(`[corId=${req.corId}] [key=${req.params.id}] Forwarted POST request failed ${err}`)
-      return res.status(500).send()
-    }
-    logger.info(`[corId=${req.corId}] [key=${req.params.id}] Forwarded POST request successful`)
-    res.status(response.statusCode).send(body)
+  nodes.forEach(node => {
+    request({
+      url: 'http://' + node.address  + '/v1/internal/' + req.params.key,
+      method: 'POST',
+      json: true,
+      headers: { 'x-correlation-id': req.corId },
+      body: req.body,
+      timeout: 4000
+    }, function(err, response, body) {
+      if (err) {
+        req.logger.error(`Forwarded POST request failed ${err}`)
+        responses.push({ type: 'err', body: body })
+      } else {
+        req.logger.info(`Forwarded POST request successful`)
+        responses.push({ type: 'success', status: response.statusCode, body: body })
+      }
+      let successfulResponses = responses.filter(response => response.type === 'success')
+      if (successfulResponses.length >= quorum) {
+        if (!sent) {
+          sent = true
+          res.status(successfulResponses[0].status).json(successfulResponses.map(res => res.body))
+        }
+      }
+      if (responses.length === nodes.length) {
+        req.logger.info('All responses received.')
+        if (!sent) {
+          sent = true
+          res.status(500).json({ message: 'Quorum not fulfilled.'})
+          req.logger.error('Quorum not fulfilled')
+        }
+      }
+    })
   })
 })
 
@@ -141,7 +198,11 @@ router.delete('/v1/:id', validationMiddleware, function(req, res) {
 app.use(router)
 
 app.use(function(err, req, res, next) {
-  logger.error(`[corId=${req.corId}] Uncaught error happend ${err}`)
+  if (req.logger) {
+    req.logger.error(`Uncaught error happend ${err}`)
+  } else {
+    logger.error(`Uncaught error happend ${err}`)
+  }
   res.status(500).send()
 })
 
