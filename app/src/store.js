@@ -1,31 +1,55 @@
+const util = require('./util')
+const config = require('./config')
+
 const store = {}
 
-exports.get = function(id) {
-  return store[id]
+exports.get = function(key) {
+  const hash = util.hash(key, config.maxOffset).toString()
+  return store[hash] ? store[hash][key] : undefined
 }
 
-exports.set = function(id, value) {
-  if (store[id]) {
+exports.set = function(key, value) {
+  const hash = util.hash(key, config.maxOffset).toString()
+  if (store[hash] && store[hash][key]) {
     return null
   }
-  store[id] = {
-    values: [value],
-    version: 1
-  }
-  return store[id]
+  store[hash] = store[hash] || {}
+  store[hash][key] = value
+  return store[hash][key]
 }
 
-exports.update = function(id, value) {
-  if (!store[id]) {
-    return 1
+exports.update = function(key, value) {
+  const hash = util.hash(key, config.maxOffset).toString()
+  if (!store[hash] || !store[hash][key]) {
+    return null
   }
-  store[id].values = [value]
-  store[id].version = store[id].version + 1
+  store[hash][key] = value
 }
 
-exports.delete = function(id) {
-  if (!store[id]) {
-    return 1
+exports.delete = function(key) {
+  const hash = util.hash(key, config.maxOffset).toString()
+  if (!store[hash] || !store[hash][key]) {
+    return null
   }
-  delete store[id]
+  delete store[hash][key]
+}
+
+// Note: from - inclusive, to - inclusive
+exports.getByRange = function(from, to) {
+  const output = {}
+  Object.keys(store)
+    .map(key => parseInt(key, 10))
+    .filter(key => key >= from && key <= to)
+    .forEach(key => output[key] = store[key])
+  return output
+}
+
+exports.setInBulk = function(input) {
+  Object.keys(input).forEach(key => store[key] = input[key])
+}
+
+// For unit tests only
+exports._data = store
+exports._clear = function() {
+  Object.keys(store).forEach(key => delete store[key])
 }

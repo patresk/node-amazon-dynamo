@@ -75,7 +75,7 @@ describe('Util', function () {
       expect(util.getReplicasForNode(hashRing, 'a', 1)).to.deep.equal([{ offset: 800, address: 'b' }])
     })
 
-    it('should work properly if the number requested is higher then nodes provided', function() {
+    it('should work properly if the number of nodes requested is higher then nodes provided', function() {
       let hashRing = [ { offset: 200, address: 'a' }, { offset: 800, address: 'b' } ]
       expect(util.getReplicasForNode(hashRing, 'a', 3)).to.deep.equal([{ offset: 800, address: 'b' }])
     })
