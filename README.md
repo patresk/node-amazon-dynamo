@@ -1,13 +1,12 @@
 
-## Dockerized Dynamo Database based on Node.js
+## Distributed key-value database inspired by Amazon Dynamo
 
-**Distributed systems**
+Implementation of a course assignment: Distributed program systems @ FIIT
 
-**Members:**
+**Contributors:**
 - Patrik Gallik
 - Viktor Vinczler
 - Erik Grman
-
 
 ## VirtualBox image
 
