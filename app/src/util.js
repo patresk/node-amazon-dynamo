@@ -135,6 +135,6 @@ exports.hash = function hash(string, max) {
     hash = ((hash<<5)-hash)+char;
     hash = hash & hash; // Convert to 32bit integer
   }
-  return hash % max;
+  return Math.abs(hash % max);
   //return farmhash.hash32(string) % max
 }
