@@ -6,6 +6,15 @@ const util = require('../src/util')
 
 describe('Util', function () {
 
+  let hashRing = [
+    { offset: 100, address: 'a' },
+    { offset: 300, address: 'b' },
+    { offset: 500, address: 'c' },
+    { offset: 600, address: 'd' },
+    { offset: 900, address: 'e' },
+    { offset: 1200, address: 'f' },
+  ]
+
   describe('addNodeToHashRing()', function () {
     it('should work on small hash ring', function () {
       let maxOffset = 1023
@@ -39,7 +48,7 @@ describe('Util', function () {
       ])
     })
 
-    it('shoud handle "ring" edge cases', function () {
+    it('shoud handle edge cases', function () {
       let maxOffset = 1023
       let hashRing = [ { offset: 200, address: 'a' }, { offset: 700, address: 'b' } ]
       let node = { address: 'c' }
@@ -69,15 +78,40 @@ describe('Util', function () {
     })
   })
 
-  describe('getReplicasForNode()', function() {
+  describe('getNodeAddressSpace()', function() {
+    it('should return address space the node is resposible for', function() {
+      let hashRing = [
+        { offset: 100, address: 'a' },
+        { offset: 300, address: 'b' },
+        { offset: 500, address: 'c' },
+        { offset: 600, address: 'd' },
+        { offset: 900, address: 'e' },
+        { offset: 1200, address: 'f' },
+      ]
+      expect(util.getNodeAddressSpace(hashRing, hashRing[2])).to.deep.equal({ from: 500, to: 600 })
+      expect(util.getNodeAddressSpace(hashRing, hashRing[5])).to.deep.equal({ from: 1200, to: 100 })
+    })
+  })
+
+  describe('getCounterClockwiseNode()', function() {
+    it('should return counter clockwise node from the ring', function() {
+      expect(util.getCounterClockwiseNode(hashRing, hashRing[2])).to.deep.equal(hashRing[1])
+      expect(util.getCounterClockwiseNode(hashRing, hashRing[5])).to.deep.equal(hashRing[4])
+      expect(util.getCounterClockwiseNode(hashRing, hashRing[0])).to.deep.equal(hashRing[5])
+    })
+  })
+
+  describe('getNodesIamReplicaFor()', function() {
     it('should return nothing if there is only one node', function() {
-      let hashRing = [ { offset: 200, address: 'a' }, { offset: 800, address: 'b' } ]
-      expect(util.getReplicasForNode(hashRing, 'a', 1)).to.deep.equal([{ offset: 800, address: 'b' }])
+      let hashRing = [ { offset: 200, address: 'a' }]
+      expect(util.getNodesIamReplicaFor(hashRing, { address: 'a' }, 3)).to.deep.equal([])
+      hashRing = [ { offset: 200, address: 'a' }, { offset: 800, address: 'b' } ]
+      expect(util.getNodesIamReplicaFor(hashRing, { address: 'a' }, 1)).to.deep.equal([{ offset: 800, address: 'b' }])
     })
 
     it('should work properly if the number of nodes requested is higher then nodes provided', function() {
       let hashRing = [ { offset: 200, address: 'a' }, { offset: 800, address: 'b' } ]
-      expect(util.getReplicasForNode(hashRing, 'a', 3)).to.deep.equal([{ offset: 800, address: 'b' }])
+      expect(util.getNodesIamReplicaFor(hashRing, { address: 'a' }, 3)).to.deep.equal([{ offset: 800, address: 'b' }])
     })
 
     it('should work properly if the hash ring is large', function() {
@@ -89,20 +123,39 @@ describe('Util', function () {
         { offset: 900, address: 'e' },
         { offset: 1200, address: 'f' },
       ]
-      expect(util.getReplicasForNode(hashRing, 'a', 3)).to.deep.equal([
+      expect(util.getNodesIamReplicaFor(hashRing, { address: 'a' }, 3)).to.deep.equal([
         { offset: 300, address: 'b' },
         { offset: 500, address: 'c' },
         { offset: 600, address: 'd' }
       ])
-      expect(util.getReplicasForNode(hashRing, 'e', 2)).to.deep.equal([
+      expect(util.getNodesIamReplicaFor(hashRing, { address: 'e' }, 2)).to.deep.equal([
         { offset: 1200, address: 'f' },
         { offset: 100, address: 'a' }
       ])
-      expect(util.getReplicasForNode(hashRing, 'f', 3)).to.deep.equal([
+      expect(util.getNodesIamReplicaFor(hashRing, { address: 'f' }, 3)).to.deep.equal([
         { offset: 100, address: 'a' },
         { offset: 300, address: 'b' },
         { offset: 500, address: 'c' }
       ])
+    })
+  })
+
+  describe('Real example', function() {
+    it('should work', function() {
+      let hashRing = [
+        { offset: 100, address: 'a' },
+        { offset: 300, address: 'b' },
+        { offset: 500, address: 'c' },
+        { offset: 600, address: 'd' },
+        { offset: 900, address: 'e' },
+        { offset: 1200, address: 'f' },
+      ]
+      let myself = { offset: 600, address: 'd' }
+      expect(util.getNodesIamReplicaFor(hashRing, myself, 2)).to.deep.equal([
+        { offset: 900, address: 'e' },
+        { offset: 1200, address: 'f' }
+      ])
+      expect(util.getNodeForOffset(hashRing, myself.offset - 1)).to.deep.equal({ offset: 500, address: 'c' })
     })
   })
 

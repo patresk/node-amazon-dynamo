@@ -35,6 +35,11 @@ router.get('/v1/ping', function(req, res) {
   })
 })
 
+router.get('/v1/internal/data', function(req, res) {
+  logger.info('Get data request received', req.query)
+  res.status(200).json(store.getByRange(req.query.from, req.query.to))
+})
+
 // Add a node to the hash ring
 // If a parameter predict is set to true, the hash ring is not set
 //  only is returned "how would the hash ring looks like"

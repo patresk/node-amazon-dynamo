@@ -29,7 +29,7 @@ exports.update = function(key, value) {
 exports.delete = function(key) {
   const hash = util.hash(key, config.maxOffset).toString()
   if (!store[hash] || !store[hash][key]) {
-    return null
+    return 1
   }
   delete store[hash][key]
 }

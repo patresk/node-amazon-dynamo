@@ -1,6 +1,8 @@
 'use strict';
 
+//
 // App states
+//
 // - STARTING- when node's api is not yet public, but the node is registered in service discovery
 // - NEW     - the app is in the new state right after it is added to the network.
 //           - the app starts to ping all other nodes and tries to receive position
@@ -18,17 +20,15 @@ const co = require('co')
 const logger = require('./logger')
 const util = require('./util')
 const config = require('./config')
+const store = require('./store')
 
-const consulUrl = 'http://consul:8500'
 let state = 'NEW'
 let myself = undefined
-let nodeList = []
 let hashRing = []
-const maxOffset = config.maxOffset
 
 const getNodes = function() {
   return request({
-    url: consulUrl + '/v1/catalog/service/app',
+    url: config.consulUrl + '/v1/catalog/service/app',
     method: 'GET',
     json: true
   })
@@ -58,25 +58,35 @@ const addNodeToRing = function(address, node, predict) {
   })
 }
 
-const refreshNodes = co.wrap(function* () {
+const fetchData = function(address, range) {
+  logger.info('Fetching data from', address, 'range', range)
+  return request({
+    url: 'http://' + address + '/v1/internal/data',
+    method: 'GET',
+    json: true,
+    qs: range,
+    timeout: 2000
+  })
+}
+
+const identifyMyself = co.wrap(function* () {
   const nodes = yield getNodes()
   logger.info('Number of fetched nodes from consul:', nodes.length)
 
-  const internalNodeList = []
-
+  const nodeList = []
   yield Promise.all(nodes.map(node => {
     let address = node.Address + ':' + node.ServicePort
     return pingNode(address)
       .then(response => {
-        internalNodeList.push({ address: address, hostname: response.hostname, status: response.status })
+        nodeList.push({ address: address, hostname: response.hostname, status: response.status })
       }, response => {
-        internalNodeList.push({ address: address, hostname: response.hostname, status: 'STARTING' })
+        nodeList.push({ address: address, hostname: response.hostname, status: 'STARTING' })
       })
   }))
 
-  logger.info('Ping result:', internalNodeList.map(node => node.status).join(','))
-  nodeList = internalNodeList
-  myself = internalNodeList.filter(node => node.hostname === process.env.HOSTNAME)[0]
+  logger.info('Ping result:', nodeList.map(node => node.status).join(','))
+  myself = nodeList.filter(node => node.hostname === process.env.HOSTNAME)[0]
+
   if (myself) {
     logger.info('Node identified itself as', myself.address)
   } else {
@@ -87,11 +97,13 @@ const refreshNodes = co.wrap(function* () {
 
 exports.init = function init() {
   co(function*() {
-    // Note: wait till api's are up
+    // Note: wait until api is up
     yield util.sleep(3000)
-    yield refreshNodes()
+    yield identifyMyself()
 
-    // NEW STATE
+    // ---
+    // NEW state
+    // ---
     do {
       // Note: race conditions are not fullfilled here.
       const allNodes = yield getNodes()
@@ -137,27 +149,49 @@ exports.init = function init() {
           offset: 0
         }]
       }
-      logger.info('Node initialized with hash ring:', hashRing)
+      myself.offset = hashRing.filter(node => node.address === myself.address)[0].offset
+      logger.info(`Node initialized with hash ring: ${hashRing}`)
       state = 'PENDING'
-      logger.info('State changed to', state)
+      logger.info(`State changed to ${state}`)
     } while(state !== 'PENDING')
 
-    // PENDING STATE
+    // ---
+    // PENDING state
+    // ---
     do {
-      // Todo: implement
+      const requests = []
+
+      let replicas = util.getNodesIamReplicaFor(hashRing, myself, config.replicas - 1)
+      if (replicas.length === 0) {
+        logger.info('This node is not replica for any node.')
+      } else {
+        logger.info(`This node is replica for ${replicas.length} nodes. Fetching data...`)
+        replicas.forEach(repl => requests.push({ node: repl, range: util.getNodeAddressSpace(hashRing, repl) }))
+      }
+
+      let previousNode = util.getCounterClockwiseNode(hashRing, myself)
+      if (previousNode) {
+        requests.push({ node: previousNode, range: util.getNodeAddressSpace(hashRing, myself) })
+      }
+
+      let responses = yield Promise.all(requests.map(request => fetchData(request.node.address, request.range)))
+      responses.forEach(data => store.setInBulk(data))
+
       state = 'READY'
-      logger.info('State changed to READY')
+      logger.info('State changed to READY. Node is now ready to receive events from other nodes.')
     } while(state !== 'READY')
 
-    // READY STATE
-    //do {
-    //  yield refreshNodes()
-    //  yield util.sleep(5000)
-    //} while(state !== 'CRASHED')
+    // ---
+    // READY state
+    // ---
+
+    // Todo: Check for nodes failture
+    // Todo: Sync with replicas
 
   }).catch(err => {
-    logger.error('Error occured:', err)
+    logger.error(`Error occured: ${err}`)
     state = 'CRASHED'
+    logger.error(`State changed to ${state}`)
   })
 }
 
@@ -173,11 +207,11 @@ exports.addNodeToHashRing = function(node, predict) {
   // This is super important - of the prediction is true, the current
   // hash ring is NOT being updated
   const ring = predict ? Object.assign([], hashRing) : hashRing
-  return util.addNodeToHashRing(ring, maxOffset, node)
+  return util.addNodeToHashRing(ring, config.maxOffset, node)
 }
 
 exports.getNodeForKey = function(id) {
-  const offset = util.hash(id, maxOffset)
+  const offset = util.hash(id, config.maxOffset)
   const node = util.getNodeForOffset(hashRing, offset)
   logger.info(`Key ${id} hashed to offset ${offset} with node found: ${node}`)
   if (node.address === myself.address) {
@@ -191,10 +225,10 @@ exports.getNodeForKey = function(id) {
 }
 
 exports.getNodesForKey = function(id) {
-  const offset = util.hash(id, maxOffset)
+  const offset = util.hash(id, config.maxOffset)
   const node = util.getNodeForOffset(hashRing, offset)
   logger.info(`Key ${id} hashed to offset ${offset} with node found: ${node}`)
-  const replicas = util.getReplicasForNode(hashRing, node.address, config.replicas - 1)
+  const replicas = util.getNodesIamReplicaFor(hashRing, node, config.replicas - 1)
   logger.info(`Key ${id} hashed to offset ${offset} with replicas found: ${replicas}`)
   return [node].concat(replicas)
 }

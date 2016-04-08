@@ -2,7 +2,7 @@
 
 const deepEqual = require('deep-equal')
 const _ = require('lodash')
-const farmhash = require('farmhash')
+//const farmhash = require('farmhash')
 
 exports.addNodeToHashRing = function(hashRing, maxOffset, node) {
   if (hashRing.length === 0) {
@@ -67,7 +67,40 @@ exports.getNodeForOffset = function getNodeForOffset(hashRing, offset) {
   return found
 }
 
-exports.getReplicasForNode = function getReplicasForNode(hashRingArg, nodeAddress, number) {
+// Note: "to" offset can be smaller than "from"!
+exports.getNodeAddressSpace = function getNodeAddressSpace(hashRing, node) {
+  let clockwiseNode = getClockwiseNode(hashRing, node)
+  return { from: node.offset, to: clockwiseNode.offset }
+}
+
+const getClockwiseNode = exports.getClockwiseNode = function(hashRing, node) {
+  let index = getIndex(hashRing, node)
+  if (index !== -1) {
+    return hashRing[index + 1 < hashRing.length ? index + 1 : 0]
+  }
+}
+
+const getCounterClockwiseNode = exports.getCounterClockwiseNode = function(hashRing, node) {
+  if (hashRing.length <= 1) {
+    return null
+  }
+  let index = getIndex(hashRing, node)
+  if (index !== -1) {
+    return hashRing[index - 1 >= 0 ? index - 1 : hashRing.length - 1]
+  }
+}
+
+const getIndex = exports.getIndex = function(hashRing, node) {
+  let index = -1
+  hashRing.forEach((n, i) => {
+    if (n.address === node.address) {
+      index = i
+    }
+  })
+  return index
+}
+
+exports.getNodesIamReplicaFor = function getReplicasForNode(hashRingArg, node, number) {
   let hashRing = Object.assign([], hashRingArg)
 
   if (hashRing.length === 1) {
@@ -76,8 +109,8 @@ exports.getReplicasForNode = function getReplicasForNode(hashRingArg, nodeAddres
 
   hashRing.sort((a, b) => a.offset > b.offset)
   let nodeIndex = -1
-  hashRing.forEach((node, index) => {
-    if (node.address == nodeAddress) {
+  hashRing.forEach((ringNode, index) => {
+    if (ringNode.address == node.address) {
       nodeIndex = index
     }
   })
@@ -86,7 +119,7 @@ exports.getReplicasForNode = function getReplicasForNode(hashRingArg, nodeAddres
   hashRing = hashRing.concat(hashRing)
   const nodes = []
   for (let i = 1; i <= number; i++) {
-    if (hashRing[nodeIndex + i] && hashRing[nodeIndex + i].address != nodeAddress) {
+    if (hashRing[nodeIndex + i] && hashRing[nodeIndex + i].address != node.address) {
       nodes.push(hashRing[nodeIndex + i])
     }
   }
@@ -95,5 +128,13 @@ exports.getReplicasForNode = function getReplicasForNode(hashRingArg, nodeAddres
 }
 
 exports.hash = function hash(string, max) {
-  return farmhash.hash32(string) % max
+  var hash = 0;
+  if (string.length == 0) return hash;
+  for (var i = 0; i < string.length; i++) {
+    var char = string.charCodeAt(i);
+    hash = ((hash<<5)-hash)+char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash % max;
+  //return farmhash.hash32(string) % max
 }
