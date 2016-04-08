@@ -16,6 +16,7 @@
 
 const request = require('request-promise')
 const co = require('co')
+const deepEqual = require('deep-equal')
 
 const logger = require('./logger')
 const util = require('./util')
@@ -101,9 +102,10 @@ exports.init = function init() {
     yield util.sleep(3000)
     yield identifyMyself()
 
-    // ---
+    // ------------------
     // NEW state
-    // ---
+    // ------------------
+    
     do {
       // Note: race conditions are not fullfilled here.
       const allNodes = yield getNodes()
@@ -155,13 +157,14 @@ exports.init = function init() {
       logger.info(`State changed to ${state}`)
     } while(state !== 'PENDING')
 
-    // ---
+    // ------------------
     // PENDING state
-    // ---
+    // ------------------
+
     do {
       const requests = []
 
-      let replicas = util.getNodesIamReplicaFor(hashRing, myself, config.replicas - 1)
+      const replicas = util.getNodesIamReplicaFor(hashRing, myself, config.replicas - 1)
       if (replicas.length === 0) {
         logger.info('This node is not replica for any node.')
       } else {
@@ -169,29 +172,30 @@ exports.init = function init() {
         replicas.forEach(repl => requests.push({ node: repl, range: util.getNodeAddressSpace(hashRing, repl) }))
       }
 
-      let previousNode = util.getCounterClockwiseNode(hashRing, myself)
+      const previousNode = util.getCounterClockwiseNode(hashRing, myself)
       if (previousNode) {
         requests.push({ node: previousNode, range: util.getNodeAddressSpace(hashRing, myself) })
       }
 
-      let responses = yield Promise.all(requests.map(request => fetchData(request.node.address, request.range)))
+      const responses = yield Promise.all(requests.map(request => fetchData(request.node.address, request.range)))
       responses.forEach(data => store.setInBulk(data))
+      logger.info('Replication finished.')
 
       state = 'READY'
-      logger.info('State changed to READY. Node is now ready to receive events from other nodes.')
+      logger.info(`State changed to ${state}`)
     } while(state !== 'READY')
 
-    // ---
+    // ------------------
     // READY state
-    // ---
+    // ------------------
 
-    // Todo: Check for nodes failture
-    // Todo: Sync with replicas
+    setInterval(refreshNodes, 5000)
 
   }).catch(err => {
     logger.error(`Error occured: ${err}`)
     state = 'CRASHED'
     logger.error(`State changed to ${state}`)
+    // Todo: deregister from service discovery somehow
   })
 }
 
@@ -232,3 +236,39 @@ exports.getNodesForKey = function(id) {
   logger.info(`Key ${id} hashed to offset ${offset} with replicas found: ${replicas}`)
   return [node].concat(replicas)
 }
+
+const refreshNodes = co.wrap(function *() {
+  const nodes = yield getNodes()
+  const nodesDown = hashRing.filter(node => {
+    nodes.map(node => node.Address + ':' + node.ServicePort).indexOf(node.address) < 0
+  })
+
+  if (nodesDown.length === 0) {
+    return logger.info('No node is down, moving on..')
+  }
+
+  if (nodesDown[0].address === myself.address) {
+    logger.error('The note tht down is myself, shuting down...')
+    process.exit(1)
+  }
+
+  logger.info('A node is down.', nodesDown)
+
+  // Get nodes that this node is resposible to hold replicas for
+  const prevReplicatedNodes = util.getNodesIamReplicaFor(hashRing, myself, config.replicas - 1)
+
+  // Actually removes the down node from hash ring
+  hashRing = util.removeNodeFromHashRing(hashRing, nodesDown[0])
+
+  // Get nodes this node is responsible for again
+  const replicatedNodes = util.getNodesIamReplicaFor(hashRing, myself, config.replicas - 1)
+
+  if (!deepEqual(prevReplicatedNodes, replicatedNodes)) {
+    logger.info('Replicated nodes has changed, fetching data...')
+    const responses = yield Promise.all(replicatedNodes.map(node => fetchData(node.address, util.getNodeAddressSpace(hashRing, node))))
+    responses.forEach(data => store.setInBulk(data))
+    logger.info('Replication finished.')
+  } else {
+    logger.info('Replicated nodes has not changed, moving on...')
+  }
+})

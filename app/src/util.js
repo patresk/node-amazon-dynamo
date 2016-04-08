@@ -36,6 +36,13 @@ exports.addNodeToHashRing = function(hashRing, maxOffset, node) {
   return hashRing
 }
 
+exports.removeNodeFromHashRing = function(hashRingArg, node) {
+  const hashRing = Object.assign([], hashRingArg)
+  const index = getIndex(hashRing, node)
+  hashRing.splice(index, 1)
+  return hashRing
+}
+
 exports.sleep = function sleep(ms) {
   return new Promise(resolve => {
     setTimeout(resolve, ms)

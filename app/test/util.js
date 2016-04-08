@@ -61,6 +61,18 @@ describe('Util', function () {
     })
   })
 
+  describe('removeNodeFromHashRing()', function() {
+    it('should remove a node', function() {
+      expect(util.removeNodeFromHashRing(hashRing, { offset: 300, address: 'b' })).to.deep.equal([
+        { offset: 100, address: 'a' },
+        { offset: 500, address: 'c' },
+        { offset: 600, address: 'd' },
+        { offset: 900, address: 'e' },
+        { offset: 1200, address: 'f' },
+      ])
+    })
+  })
+
   describe('hash()', function () {
     it ('should return the same hash for the same key', function() {
       let h = util.hash('test')

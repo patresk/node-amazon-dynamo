@@ -51,6 +51,18 @@ exports.getByRange = function(from, to) {
   return output
 }
 
+exports.deleteByRange = function(from, to) {
+  if (to < from) {
+    Object.keys(store)
+      .filter(key => parseInt(key, 10) >= from || parseInt(key, 10) <= to)
+      .forEach(key => delete store[key])
+  } else {
+    Object.keys(store)
+      .filter(key => parseInt(key, 10) >= from && parseInt(key, 10) <= to)
+      .forEach(key => delete store[key])
+  }
+}
+
 exports.setInBulk = function(input) {
   Object.keys(input).forEach(key => store[key] = input[key])
 }
@@ -64,6 +76,5 @@ exports._clear = function() {
 // Periodic store status loggin
 setInterval(function log() {
   logger.info(`[keys=${Object.keys(store).length}] Store status`)
-  // Debug
-  //logger.info(Object.keys(store).map(key => Object.keys(store[key])))
+  logger.info('Keys stored: ', Object.keys(store).map(key => Object.keys(store[key])))
 }, 5000)
