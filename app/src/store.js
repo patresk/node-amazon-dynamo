@@ -9,22 +9,22 @@ exports.get = function(key) {
   return store[hash] ? store[hash][key] : undefined
 }
 
-exports.set = function(key, value) {
+exports.set = function(key, value, clock) {
   const hash = util.hash(key, config.maxOffset).toString()
   if (store[hash] && store[hash][key]) {
     return null
   }
   store[hash] = store[hash] || {}
-  store[hash][key] = value
+  store[hash][key] = { value: [value], clock: clock }
   return store[hash][key]
 }
 
-exports.update = function(key, value) {
+exports.update = function(key, value, clock) {
   const hash = util.hash(key, config.maxOffset).toString()
   if (!store[hash] || !store[hash][key]) {
     return null
   }
-  store[hash][key] = value
+  store[hash][key] = { value: [value], clock: clock }
 }
 
 exports.delete = function(key) {
