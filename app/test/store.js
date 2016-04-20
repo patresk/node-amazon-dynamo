@@ -13,15 +13,15 @@ describe('Store', function() {
 
   describe('set()', function() {
     it('should set a value', function() {
-      store.set('test', 'value')
-      expect(store._data[util.hash('test', config.maxOffset)]['test']).to.deep.equal('value')
+      store.set('test', 'value', 1)
+      expect(store._data[util.hash('test', config.maxOffset)]['test']).to.deep.equal({ value: ['value'], clock: 1 })
     })
   })
 
   describe('get()', function() {
     it('should get a value', function() {
-      store.set('test', 'value')
-      expect(store.get('test')).to.deep.equal('value')
+      store.set('test', 'value', 5)
+      expect(store.get('test')).to.deep.equal({ value: ['value'], clock: 5 })
     })
   })
 
@@ -48,7 +48,7 @@ describe('Store', function() {
 
   describe('setInBulk()', function() {
     it('should set a multiple key-values', function() {
-      store.set('test', 'value')
+      store.set('test', 'value', 1)
       store.setInBulk({
         '5': { another_test: 'val3' },
         '393': { next_test: 'val2' },
@@ -58,7 +58,7 @@ describe('Store', function() {
         '5': { another_test: 'val3' },
         '393': { next_test: 'val2' },
         '669': { test: 'val1' },
-        '550': { test: 'value' }
+        '550': { test: { value: ['value'], clock: 1 }}
       })
       //expect(store.get('next_test')).to.deep.equal('val2')
       //expect(store.get('another_test')).to.deep.equal('val3')

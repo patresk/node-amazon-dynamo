@@ -24,7 +24,7 @@ exports.update = function(key, value, clock) {
   if (!store[hash] || !store[hash][key]) {
     return null
   }
-  store[hash][key] = { value: [value], clock: clock }
+  store[hash][key] = { value: value, clock: clock }
 }
 
 exports.delete = function(key) {

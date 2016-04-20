@@ -98,6 +98,18 @@ router.post('/v1/internal/:key', function(req, res) {
   return res.status(200).send()
 })
 
+router.put('/v1/internal/:key', function(req, res) {
+  req.logger.info(`This node contains a value for the key`)
+  const item = store.get(req.params.key, req.body.value)
+  if (!item) {
+    return res.status(409).send()
+  }
+  const resolved = util.resolveVersions(item, { value: [req.body.value], clock: req.body.clock })
+  req.logger.info('Resolved clock:', resolved)
+  store.update(req.params.key, resolved.value, resolved.clock)
+  return res.status(200).send()
+})
+
 // -----------------------------------
 // Public API for request coordinator
 // -----------------------------------
@@ -138,10 +150,12 @@ router.get('/v1/:key', validationMiddleware, function(req, res) {
         if (!sent) {
           sent = true
           if (successfulResponses[0].body && successfulResponses[0].body.value) {
-            return res.status(successfulResponses[0].status).json({
-              value: successfulResponses[0].body.value,
-              clock: util.encodeClock(successfulResponses[0].body.clock)
-            })
+            return res.status(successfulResponses[0].status).json(successfulResponses.map(response => {
+              return {
+                value: response.body.value,
+                clock: util.encodeClock(response.body.clock)
+              }
+            }))
           }
           res.status(successfulResponses[0].status).send()
         }
@@ -208,9 +222,64 @@ router.post('/v1/:key', validationMiddleware, function(req, res) {
   })
 })
 
-router.put('/v1/:id', validationMiddleware, function(req, res) {
-  // Todo: implement
-  res.status(200).send()
+router.put('/v1/:key', validationMiddleware, function(req, res) {
+  if (!req.body.clock) {
+    return res.status(400).json({ message: 'No version specified.'})
+  }
+
+  const clock = util.decodeClock(req.body.clock)
+
+  if (!clock) {
+    return res.status(400).json({ message: 'Invalid version specified.' })
+  }
+
+  // Increment vector clock for the coordinator node
+  clock[discovery.getMyself().address] = clock[discovery.getMyself().address] || 0
+  clock[discovery.getMyself().address]++
+
+  req.logger.info('Clock after incrementing:', clock)
+
+  const nodes = discovery.getNodesForKey(req.params.key)
+  const quorum = Math.min(req.query.quorum ? parseInt(req.query.quorum, 10) : config.readQuorum, config.replicas, nodes.length)
+  const responses = []
+  let sent = false
+
+  nodes.forEach(node => {
+    request({
+      url: 'http://' + node.address  + '/v1/internal/' + req.params.key,
+      method: 'PUT',
+      json: true,
+      headers: { 'x-correlation-id': req.corId },
+      body: {
+        clock: clock,
+        value: req.body.value
+      },
+      timeout: 4000
+    }, function(err, response, body) {
+      if (err) {
+        req.logger.error(`Forwarded PUT request failed ${err}`)
+        responses.push({ type: 'err', body: body })
+      } else {
+        req.logger.info(`Forwarded PUT request successful`)
+        responses.push({ type: 'success', status: response.statusCode, body: body })
+      }
+      let successfulResponses = responses.filter(response => response.type === 'success')
+      if (successfulResponses.length >= quorum) {
+        if (!sent) {
+          sent = true
+          res.status(successfulResponses[0].status).json({ message: 'Requests successful with quorum ' + quorum })
+        }
+      }
+      if (responses.length === nodes.length) {
+        req.logger.info('All responses received.')
+        if (!sent) {
+          sent = true
+          res.status(500).json({ message: 'Quorum not fulfilled.'})
+          req.logger.error('Quorum not fulfilled')
+        }
+      }
+    })
+  })
 })
 
 router.delete('/v1/:id', validationMiddleware, function(req, res) {

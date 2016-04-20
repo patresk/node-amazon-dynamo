@@ -171,4 +171,76 @@ describe('Util', function () {
     })
   })
 
+  describe('Version resolving', function() {
+    it ('should resolve newer version', function() {
+      let store1 = {
+        value: ['jou'],
+        clock: {
+          node1: 1,
+          node2: 1
+        }
+      }
+      let store2 = {
+        value: ['yeah'],
+        clock: {
+          node1: 1,
+          node2: 0
+        }
+      }
+      expect(util.resolveVersions(store1, store2)).to.deep.equal({
+        value: ['jou'],
+        clock: {
+          node1: 1,
+          node2: 1
+        }
+      })
+    })
+
+    it ('should work even when some nodes does not have value in clock', function() {
+      let store1 = {
+        value: ['jou'],
+        clock: {
+          node1: 2
+        }
+      }
+      let store2 = {
+        value: ['yeah'],
+        clock: {
+          node1: 1,
+          node2: 0
+        }
+      }
+      expect(util.resolveVersions(store1, store2)).to.deep.equal({
+        value: ['jou'],
+        clock: {
+          node1: 2
+        }
+      })
+    })
+
+    it ('should union the values on conflict', function() {
+      let store1 = {
+        value: ['jou'],
+        clock: {
+          node1: 2,
+          node2: 1
+        }
+      }
+      let store2 = {
+        value: ['yeah'],
+        clock: {
+          node1: 1,
+          node2: 3
+        }
+      }
+      expect(util.resolveVersions(store1, store2)).to.deep.equal({
+        value: ['jou', 'yeah'],
+        clock: {
+          node1: 2,
+          node2: 3
+        }
+      })
+    })
+  })
+
 })

@@ -161,3 +161,19 @@ exports.decodeClock = function decodeClock(string) {
     return null
   }
 }
+
+exports.resolveVersions = function resolveVersions(val1, val2) {
+  const nodes = _.uniq(Object.keys(val1.clock).concat(Object.keys(val2.clock)))
+  if (nodes.filter(node => (val1.clock[node] || 0) >= (val2.clock[node] || 0)).length === nodes.length) {
+    return val1
+  }
+  if (nodes.filter(node => (val2.clock[node] || 0) >= (val1.clock[node] || 0)).length === nodes.length) {
+    return val2
+  }
+  const mergedClock = {}
+  nodes.forEach(node => mergedClock[node] = Math.max(val1.clock[node], val2.clock[node]))
+  return {
+    value: val1.value.concat(val2.value),
+    clock: mergedClock
+  }
+}
