@@ -145,3 +145,19 @@ exports.hash = function hash(string, max) {
   return Math.abs(hash % max);
   //return farmhash.hash32(string) % max
 }
+
+exports.encodeClock = function encodeClock(clock) {
+  try {
+    return new Buffer(JSON.stringify(clock)).toString('base64')
+  } catch (e) {
+    return null
+  }
+}
+
+exports.decodeClock = function decodeClock(string) {
+  try {
+    return JSON.parse(new Buffer(string, 'base64').toString('ascii'))
+  } catch (e) {
+    return null
+  }
+}

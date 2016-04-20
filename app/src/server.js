@@ -8,6 +8,7 @@ const logger = require('./logger')
 const discovery = require('./discovery')
 const store = require('./store')
 const config = require('./config')
+const util = require('./util')
 
 const app = express()
 const router = express.Router()
@@ -84,22 +85,22 @@ router.get('/v1/internal/:key', function(req, res) {
   const value = store.get(req.params.key)
   req.logger.info(`Value: ${value}`)
   if (value) {
-    return res.status(200).json({ value: value })
+    return res.status(200).json(value)
   }
   return res.status(404).send()
 })
 
 router.post('/v1/internal/:key', function(req, res) {
   req.logger.info(`This node contains a value for the key`)
-  if (!store.set(req.params.key, req.body.value)) {
+  if (!store.set(req.params.key, req.body.value, req.body.clock)) {
     return res.status(409).send()
   }
   return res.status(200).send()
 })
 
-//
+// -----------------------------------
 // Public API for request coordinator
-//
+// -----------------------------------
 
 function validationMiddleware(req, res, next) {
   if (!req.params.key) {
@@ -136,8 +137,16 @@ router.get('/v1/:key', validationMiddleware, function(req, res) {
       if (successfulResponses.length >= quorum) {
         if (!sent) {
           sent = true
-          res.status(successfulResponses[0].status).json(successfulResponses)
+          if (successfulResponses[0].body && successfulResponses[0].body.value) {
+            return res.status(successfulResponses[0].status).json({
+              value: successfulResponses[0].body.value,
+              clock: util.encodeClock(successfulResponses[0].body.clock)
+            })
+          }
+          res.status(successfulResponses[0].status).send()
         }
+      } else {
+        req.logger.info('Quorum still not fullfilled')
       }
       if (responses.length === nodes.length) {
         req.logger.info('All responses received.')
@@ -160,13 +169,17 @@ router.post('/v1/:key', validationMiddleware, function(req, res) {
 
   req.logger.info(`Sending requests to ${nodes.length} nodes`)
 
+  const body = req.body
+  body.clock = {}
+  body.clock[discovery.getMyself().address] = 1
+
   nodes.forEach(node => {
     request({
       url: 'http://' + node.address  + '/v1/internal/' + req.params.key,
       method: 'POST',
       json: true,
       headers: { 'x-correlation-id': req.corId },
-      body: req.body,
+      body: body,
       timeout: 4000
     }, function(err, response, body) {
       if (err) {
@@ -180,7 +193,7 @@ router.post('/v1/:key', validationMiddleware, function(req, res) {
       if (successfulResponses.length >= quorum) {
         if (!sent) {
           sent = true
-          res.status(successfulResponses[0].status).json(successfulResponses.map(res => res.body))
+          res.status(successfulResponses[0].status).json({ message: 'Requests successful with quorum ' + quorum })
         }
       }
       if (responses.length === nodes.length) {

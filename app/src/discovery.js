@@ -105,7 +105,7 @@ exports.init = function init() {
     // ------------------
     // NEW state
     // ------------------
-    
+
     do {
       // Note: race conditions are not fullfilled here.
       const allNodes = yield getNodes()
@@ -197,6 +197,10 @@ exports.init = function init() {
     logger.error(`State changed to ${state}`)
     // Todo: deregister from service discovery somehow
   })
+}
+
+exports.getMyself = function() {
+  return myself
 }
 
 exports.getState = function() {
