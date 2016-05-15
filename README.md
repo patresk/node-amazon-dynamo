@@ -1,5 +1,4 @@
-
-## Distributed key-value database inspired by Amazon Dynamo
+# Distributed key-value database inspired by Amazon Dynamo
 
 Implementation of a course assignment: Distributed program systems @ FIIT
 
@@ -7,6 +6,14 @@ Implementation of a course assignment: Distributed program systems @ FIIT
 - Patrik Gallik
 - Viktor Vinczler
 - Erik Grman
+
+**Implemented Dynamo features:**
+- chord & consistent hashing
+- vector clock
+- fault tolerance
+- replication
+- sloppy quorum
+- REST API
 
 ## VirtualBox image
 
@@ -84,3 +91,67 @@ subl /workspace/node-amazon-dynamo/docker/node.yml
 ```bash
 docker-compose -f /workspace/node-amazon-dynamo/docker/node.yml up
 ```
+
+## Implementation
+
+### REST API
+
+Following REST endpoints ensures Dynamo functionality.
+Always use `application/json` Content-Type header.
+
+#### GET /v1/:key
+**Parameters:** none
+**Response:**
+```
+{
+  "value": [ "Luke Skywalker" ],
+  "clock": "eyIxOTIuMTY4Ljk5LjEwMDozMzAwMSI6MX0="
+}
+```
+#### POST /v1/:key
+**Parameters:** 
+* `value` - required
+```
+{ "value": "Luke Skywalker" }
+```
+**Response:**
+```
+{ "message": <text> }
+```
+#### PUT /v1/:key
+**Parameters:**
+* `value` - required
+* `clock` - required
+```
+{ 
+  "value": "Luke Skywalker",
+  "clock": "eyIxOTIuMTY4Ljk5LjEwMDozMzAwMSI6MX0="
+}
+```
+**Response:**
+```
+{ "message": <text> }
+```
+#### DELETE /v1/:key
+**Parameters**: none
+**Response:**
+```
+{ "message": <text> }
+```
+
+### Described use cases
+
+#### New node is added to network
+
+Node that is new to the network, follows following steps:
+
+*
+
+#### Incoming request via public api
+
+Node that receives the request via any public endpoint above is becoming the coordinator of the request and is responsible to send response to the user. The coordinator performs following steps:
+
+* Hash the key and get the position of the key in the hashring
+* Send requests to the node responsible for the node + to backups node
+* When quorum is fullfilled, sends reponse to the user
+
