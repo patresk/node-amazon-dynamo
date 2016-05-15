@@ -6,6 +6,7 @@ const store = {}
 
 exports.get = function(key) {
   const hash = util.hash(key, config.maxOffset).toString()
+  logger.info(`[module=store][action=get][count=1][key=${key}]`)
   return store[hash] ? store[hash][key] : undefined
 }
 
@@ -16,6 +17,7 @@ exports.set = function(key, value, clock) {
   }
   store[hash] = store[hash] || {}
   store[hash][key] = { value: [value], clock: clock }
+  logger.info(`[module=store][action=set][count=1][key=${key}]`)
   return store[hash][key]
 }
 
@@ -24,6 +26,7 @@ exports.update = function(key, value, clock) {
   if (!store[hash] || !store[hash][key]) {
     return null
   }
+  logger.info(`[module=store][action=update][count=1][key=${key}]`)
   store[hash][key] = { value: value, clock: clock }
 }
 
@@ -32,6 +35,7 @@ exports.delete = function(key) {
   if (!store[hash] || !store[hash][key]) {
     return 1
   }
+  logger.info(`[module=store][action=delete][count=1][key=${key}]`)
   delete store[hash][key]
 }
 
@@ -64,6 +68,7 @@ exports.deleteByRange = function(from, to) {
 }
 
 exports.setInBulk = function(input) {
+  logger.info(`[module=store][action=setBulk][count=${Object.keys(input).length}]`)
   Object.keys(input).forEach(key => store[key] = input[key])
 }
 
