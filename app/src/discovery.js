@@ -45,6 +45,20 @@ const pingNode = function(address) {
   })
 }
 
+const pingNodes = co.wrap(function* (nodes) {
+  let responses = []
+  yield Promise.all(nodes.map(node => {
+    let address = node.Address + ':' + node.ServicePort
+    return pingNode(address)
+      .then(response => {
+        responses.push({ address: address, hostname: response.hostname, status: response.status })
+      }, response => {
+        responses.push({ address: address, hostname: response.hostname, status: 'STARTING' })
+      })
+  }))
+  return responses
+})
+
 const addNodeToRing = function(address, node, predict) {
   logger.info('Sending request to add node to hash ring', address)
   return request({
@@ -73,21 +87,9 @@ const fetchData = function(address, range) {
 const identifyMyself = co.wrap(function* () {
   const nodes = yield getNodes()
   logger.info('Number of fetched nodes from consul:', nodes.length)
-
-  const nodeList = []
-  yield Promise.all(nodes.map(node => {
-    let address = node.Address + ':' + node.ServicePort
-    return pingNode(address)
-      .then(response => {
-        nodeList.push({ address: address, hostname: response.hostname, status: response.status })
-      }, response => {
-        nodeList.push({ address: address, hostname: response.hostname, status: 'STARTING' })
-      })
-  }))
-
+  const nodeList = yield pingNodes(nodes)
   logger.info('Ping result:', nodeList.map(node => node.status).join(','))
   myself = nodeList.filter(node => node.hostname === process.env.HOSTNAME)[0]
-
   if (myself) {
     logger.info('Node identified itself as', myself.address)
   } else {
@@ -107,16 +109,39 @@ exports.init = function init() {
     // ------------------
 
     do {
-      // Note: race conditions are not fullfilled here.
+      // Note: To fullfill race conditions when multiple new nodes are added at the same time
+      // 1. First make sure, that no node is in PENDING state
+      // 2. Make sure, that NEW nodes are ordered by hostname and the first one is ready to go
+      do {
+        const nodes = yield getNodes()
+        const responses = yield pingNodes(nodes)
+        if (responses.filter(node => node.status === 'PENDING').length) {
+          logger.info(`There is a node in PENDING state. Waiting...`)
+          yield util.sleep((Math.random() * 1000) + 5)
+          continue
+        }
+        if (!responses.filter(node => node.status === 'NEW').sort((a, b) => a.hostname > b.hostname)[0].address == myself.address) {
+          logger.info(`There is another NEW node. Waiting...`)
+          yield util.sleep((Math.random() * 1000) + 5)
+          continue
+        }
+        logger.info(`This node is the first one with NEW status. Moving on.. `)
+        break
+      } while(true)
+
       const allNodes = yield getNodes()
       const otherNodes = allNodes.filter(node => node.Address + ':' + node.ServicePort !== myself.address)
 
       if (otherNodes.length > 0) {
         let predictedRingResponses = []
-        // Send request to all nodes to add myself to the ring (prediction)
+        // Send request to all nodes to add me to the ring (prediction)
         yield Promise.all(otherNodes.map(function (node){
           return addNodeToRing(node.Address + ':' + node.ServicePort, { address: myself.address }, true)
             .then(response => {
+              if (response.status && response.status === 'NEW') {
+                // Note: there is a small probability that this would happen
+                return logger.info('Ring from node with status NEW received. Skipping...')
+              }
               predictedRingResponses.push(response.ring)
             }, () => {
               predictedRingResponses.push({ err: 'nope' })
@@ -125,7 +150,7 @@ exports.init = function init() {
 
         // Make sure the hash rings are the same from all nodes
         if (!util.areItemsEqual(predictedRingResponses)) {
-          // Othrwise restart the whole init process. Something is not ouky douky
+          // Otherwise restart the whole init process after random time. Something is not ouky douky
           logger.error('Starting not successfull: different hash rings returned.')
           logger.info('Trying to start init process again...')
           return setTimeout(init, 1000 + Math.floor(Math.random() * 1000))
@@ -248,11 +273,11 @@ const refreshNodes = co.wrap(function *() {
   })
 
   if (nodesDown.length === 0) {
-    return logger.info('No node is down, moving on..')
+    return logger.info('All nodes looks good, moving on..')
   }
 
   if (nodesDown[0].address === myself.address) {
-    logger.error('The note tht down is myself, shuting down...')
+    logger.error('The node that is down is myself, shuting down...')
     process.exit(1)
   }
 
@@ -262,6 +287,7 @@ const refreshNodes = co.wrap(function *() {
   const prevReplicatedNodes = util.getNodesIamReplicaFor(hashRing, myself, config.replicas - 1)
 
   // Actually removes the down node from hash ring
+  logger.info(`Removing node ${nodesDown[0]} from hashring`)
   hashRing = util.removeNodeFromHashRing(hashRing, nodesDown[0])
 
   // Get nodes this node is responsible for again

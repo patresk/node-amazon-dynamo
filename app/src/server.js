@@ -51,6 +51,10 @@ router.delete('/v1/internal/data', function(req, res) {
 //  only is returned "how would the hash ring looks like"
 router.post('/v1/ring/add', function(req, res) {
   logger.info('Request to add node to the ring received')
+  // If the state of the node is NEW, nothing is returned
+  if (discovery.getState() === 'NEW') {
+    return res.json({ status: 'NEW', ring: null })
+  }
   if (!req.body.node || !req.body.hasOwnProperty('predict')) {
     logger.error('Received request to add node to hash ring without parameters.')
     return res.sendStatus(500)
