@@ -21,7 +21,7 @@
     "_type": "visualization",
     "_source": {
       "title": "Actions per node",
-      "visState": "{\"title\":\"ActionsPerNodeVis\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"scale\":\"linear\",\"mode\":\"grouped\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"orderAgg\":{\"id\":\"2-orderAgg\",\"type\":\"max\",\"schema\":\"orderAgg\",\"params\":{\"field\":\"@timestamp\"}},\"order\":\"desc\",\"orderBy\":\"custom\"}},{\"id\":\"3\",\"type\":\"filters\",\"schema\":\"group\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=set]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Set\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=update]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Update\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=delete]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Delete\"}]}}],\"listeners\":{}}",
+      "visState": "{\"title\":\"Actions per node\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"scale\":\"linear\",\"mode\":\"grouped\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"orderAgg\":{\"id\":\"2-orderAgg\",\"type\":\"max\",\"schema\":{\"group\":\"none\",\"name\":\"orderAgg\",\"title\":\"Order Agg\",\"aggFilter\":[\"!percentiles\",\"!median\",\"!std_dev\"],\"min\":0,\"max\":null,\"editor\":false,\"params\":[]},\"params\":{\"field\":\"@timestamp\"}},\"order\":\"desc\",\"orderBy\":\"custom\"}},{\"id\":\"3\",\"type\":\"filters\",\"schema\":\"group\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=set]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Set\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=update]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Update\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=delete]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Delete\"}]}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
@@ -35,7 +35,7 @@
     "_type": "visualization",
     "_source": {
       "title": "All actions",
-      "visState": "{\"title\":\"AllActionsTimeVis\",\"type\":\"area\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"smoothLines\":false,\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"4\",\"type\":\"filters\",\"schema\":\"split\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"action\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Actions\"}],\"row\":true}}],\"listeners\":{}}",
+      "visState": "{\"title\":\"All actions\",\"type\":\"area\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"smoothLines\":false,\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"4\",\"type\":\"filters\",\"schema\":\"split\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"action\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Actions\"}],\"row\":true}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
@@ -49,7 +49,7 @@
     "_type": "visualization",
     "_source": {
       "title": "Count of active nodes",
-      "visState": "{\"title\":\"CountVis\",\"type\":\"metric\",\"params\":{\"fontSize\":60},\"aggs\":[{\"id\":\"1\",\"type\":\"cardinality\",\"schema\":\"metric\",\"params\":{\"field\":\"node.raw\"}}],\"listeners\":{}}",
+      "visState": "{\"title\":\"Count of active nodes\",\"type\":\"metric\",\"params\":{\"fontSize\":60},\"aggs\":[{\"id\":\"1\",\"type\":\"cardinality\",\"schema\":\"metric\",\"params\":{\"field\":\"node.raw\"}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
@@ -59,11 +59,11 @@
     }
   },
   {
-    "_id": "Stored-keys",
+    "_id": "Ratio-of-actions",
     "_type": "visualization",
     "_source": {
-      "title": "Stored keys",
-      "visState": "{\"title\":\"KeysVis\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMeticsAtAllLevels\":false},\"aggs\":[{\"id\":\"1\",\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"@timestamp\"}},{\"id\":\"2\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"keyscount.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"4\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"keys.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "title": "Ratio of actions",
+      "visState": "{\"title\":\"Ratio of actions\",\"type\":\"pie\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"filters\",\"schema\":\"segment\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=set]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Set\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=udpate]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Update\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=delete]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Delete\"}]}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
@@ -73,11 +73,11 @@
     }
   },
   {
-    "_id": "Ratio-of-actions",
+    "_id": "Stored-keys",
     "_type": "visualization",
     "_source": {
-      "title": "Ratio of actions",
-      "visState": "{\"title\":\"AllActionsVis\",\"type\":\"pie\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"filters\",\"schema\":\"segment\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=set]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Set\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=udpate]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Update\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=delete]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Delete\"}]}}],\"listeners\":{}}",
+      "title": "Stored keys",
+      "visState": "{\"title\":\"Stored keys\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMeticsAtAllLevels\":false},\"aggs\":[{\"id\":\"1\",\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"@timestamp\"}},{\"id\":\"2\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"node.raw\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"keyscount.raw\",\"size\":1,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"4\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"keys.raw\",\"size\":1,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
