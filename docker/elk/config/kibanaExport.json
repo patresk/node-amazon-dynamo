@@ -1,0 +1,89 @@
+[
+  {
+    "_id": "Dashboard",
+    "_type": "dashboard",
+    "_source": {
+      "title": "Dashboard",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"id\":\"Actions-per-node\",\"type\":\"visualization\",\"panelIndex\":1,\"size_x\":4,\"size_y\":3,\"col\":1,\"row\":1},{\"id\":\"All-actions\",\"type\":\"visualization\",\"panelIndex\":2,\"size_x\":5,\"size_y\":3,\"col\":5,\"row\":1},{\"id\":\"Count-of-active-nodes\",\"type\":\"visualization\",\"panelIndex\":3,\"size_x\":3,\"size_y\":2,\"col\":5,\"row\":4},{\"id\":\"Ratio-of-actions\",\"type\":\"visualization\",\"panelIndex\":4,\"size_x\":3,\"size_y\":2,\"col\":8,\"row\":4},{\"id\":\"Stored-keys\",\"type\":\"visualization\",\"panelIndex\":5,\"size_x\":4,\"size_y\":3,\"col\":1,\"row\":4}]",
+      "optionsJSON": "{\"darkTheme\":false}",
+      "uiStateJSON": "{}",
+      "version": 1,
+      "timeRestore": false,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "Actions-per-node",
+    "_type": "visualization",
+    "_source": {
+      "title": "Actions per node",
+      "visState": "{\"title\":\"ActionsPerNodeVis\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"scale\":\"linear\",\"mode\":\"grouped\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"orderAgg\":{\"id\":\"2-orderAgg\",\"type\":\"max\",\"schema\":\"orderAgg\",\"params\":{\"field\":\"@timestamp\"}},\"order\":\"desc\",\"orderBy\":\"custom\"}},{\"id\":\"3\",\"type\":\"filters\",\"schema\":\"group\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=set]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Set\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=update]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Update\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=delete]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Delete\"}]}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"logstash-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "All-actions",
+    "_type": "visualization",
+    "_source": {
+      "title": "All actions",
+      "visState": "{\"title\":\"AllActionsTimeVis\",\"type\":\"area\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"smoothLines\":false,\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"4\",\"type\":\"filters\",\"schema\":\"split\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"action\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Actions\"}],\"row\":true}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"logstash-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "Count-of-active-nodes",
+    "_type": "visualization",
+    "_source": {
+      "title": "Count of active nodes",
+      "visState": "{\"title\":\"CountVis\",\"type\":\"metric\",\"params\":{\"fontSize\":60},\"aggs\":[{\"id\":\"1\",\"type\":\"cardinality\",\"schema\":\"metric\",\"params\":{\"field\":\"node.raw\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"logstash-*\",\"query\":{\"query_string\":{\"query\":\"@timestamp:[now-15s/s TO now]\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "Stored-keys",
+    "_type": "visualization",
+    "_source": {
+      "title": "Stored keys",
+      "visState": "{\"title\":\"KeysVis\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMeticsAtAllLevels\":false},\"aggs\":[{\"id\":\"1\",\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"@timestamp\"}},{\"id\":\"2\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"node.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"keyscount.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"4\",\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"keys.raw\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"logstash-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "Ratio-of-actions",
+    "_type": "visualization",
+    "_source": {
+      "title": "Ratio of actions",
+      "visState": "{\"title\":\"AllActionsVis\",\"type\":\"pie\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"type\":\"filters\",\"schema\":\"segment\",\"params\":{\"filters\":[{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=set]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Set\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=udpate]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Update\"},{\"input\":{\"query\":{\"query_string\":{\"query\":\"body: \\\"[action=delete]\\\"\",\"analyze_wildcard\":true}}},\"label\":\"Delete\"}]}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"logstash-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  }
+]
