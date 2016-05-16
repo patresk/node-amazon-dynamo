@@ -141,7 +141,7 @@ Each endpoint has `quorum` *query* parameter (not in body!), e.g. `GET /v1/:key?
 
 ### Described use cases
 
-#### New node is added to network
+#### New node is added to the network
 
 A node that is added to the network, performs following steps:
 
@@ -160,3 +160,18 @@ Node that receives the request via any public endpoint above is becoming the coo
 * 2. Sends requests to the node responsible for the node + to backups node
 * 3, When quorum is fullfilled, sends reponse to the user
 
+## How to dev
+
+Tests can be run on host machine
+```
+# assumes `npm install`
+npm test
+```
+
+**Structure**
+- `src/server.js` - contains public and internal API 
+- `src/discovery.js` - node lifecycle, coordination
+- `src/util.js` - helpers to add/remove nodes from hashring, vector clock helpers
+- `src/logger.js` - logger wrapper
+- `src/store.js` - store implementation, when all data (with backups) are stored
+- `src/config.js` - configuration
