@@ -46,6 +46,22 @@ const pingNode = function(address) {
   })
 }
 
+const registerCheck = function(node) {
+  logger.info('Registering health check...')
+  return request({
+    url: config.consulUrl + '/v1/agent/check/register',
+    method: 'POST',
+    json: true,
+    body: {
+      "ID": node.hostname,
+      "Name": "Dynamo node health check",
+      "HTTP": 'http://' + node.address + '/v1/check',
+      "Interval": "5s",
+      "ServiceName": "app"
+    }
+  })
+}
+
 const pingNodes = co.wrap(function* (nodes) {
   let responses = []
   yield Promise.all(nodes.map(node => {
@@ -103,7 +119,9 @@ exports.init = function init() {
   co(function*() {
     // Note: wait until api is up
     yield util.sleep(3000)
+
     yield identifyMyself()
+    yield registerCheck(myself)
 
     // ------------------
     // NEW state
