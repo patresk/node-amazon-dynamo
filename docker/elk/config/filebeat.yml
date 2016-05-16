@@ -7,5 +7,5 @@ filebeat:
 output:
     logstash:
         enabled: true
-        hosts: ["192.168.99.10:5000"]
+        hosts: ["10.0.2.15:5000"]
         index: logstash

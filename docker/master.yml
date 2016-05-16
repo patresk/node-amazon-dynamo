@@ -21,7 +21,7 @@ services:
     - "80:80"
 
   consul:
-    command: -server -bootstrap -advertise 192.168.1.10
+    command: -server -bootstrap -advertise 10.0.2.15
     image: progrium/consul:latest
     ports:
     - "8300:8300"

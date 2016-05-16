@@ -80,6 +80,5 @@ exports._clear = function() {
 
 // Periodic store status loggin
 setInterval(function log() {
-  logger.info(`[keys=${Object.keys(store).length}] Store status`)
-  logger.info('Keys stored: ', Object.keys(store).map(key => Object.keys(store[key])))
-}, 5000)
+  logger.info('Keys stored: ', Object.keys(store).length, Object.keys(store).map(key => Object.keys(store[key])))
+}, 10000)

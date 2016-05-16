@@ -14,7 +14,7 @@ services:
     volumes:
       - /workspace/node-amazon-dynamo/docker/elk/config/logstash.conf:/etc/logstash/conf.d/logstash.conf
     ports:
-      - "5000:5000/udp"
+      - "5000:5000"
     links:
       - elasticsearch
 
