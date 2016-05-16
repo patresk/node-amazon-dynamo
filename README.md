@@ -143,15 +143,20 @@ Always use `application/json` Content-Type header.
 
 #### New node is added to network
 
-Node that is new to the network, follows following steps:
+A node that is added to the network, performs following steps:
 
-*
+* 1. Sets its state to NEW
+* 2. Check if there are some nodes in PENDING state. If yes, waits random time and tries again step 2.
+* 3. If there are no PENDING nodes, the node checks if there are other nodes with NEW state. These nodes are ordered by hostname, and the first one node is allowed to continue. If the current node is not allowed, waits random time and goes to step 2.
+* 4. Send requests to all nodes to add itself to hashring. All nodes sent response with predicted new hash ring. If all predicted hashrings are the same, the node sends requests again, and it is added to the hashring. The node changes its state to PENDING
+* 5. The node sends requests to responsible nodes it should copy data from -> keys in its address space and backups for other nodes
+* 6. If copying data is done, node changes its state to READY
 
 #### Incoming request via public api
 
 Node that receives the request via any public endpoint above is becoming the coordinator of the request and is responsible to send response to the user. The coordinator performs following steps:
 
 * Hash the key and get the position of the key in the hashring
-* Send requests to the node responsible for the node + to backups node
+* Sends requests to the node responsible for the node + to backups node
 * When quorum is fullfilled, sends reponse to the user
 
