@@ -28,6 +28,7 @@ let myself = undefined
 let hashRing = []
 
 const getNodes = function() {
+  logger.info('Getting nodes from consul...')
   return request({
     url: config.consulUrl + '/v1/catalog/service/app',
     method: 'GET',
@@ -120,7 +121,7 @@ exports.init = function init() {
           yield util.sleep((Math.random() * 1000) + 5)
           continue
         }
-        if (!responses.filter(node => node.status === 'NEW').sort((a, b) => a.hostname > b.hostname)[0].address == myself.address) {
+        if (!responses.filter(node => node.status === 'NEW').sort((a, b) => a.hostname < b.hostname)[0].address == myself.address) {
           logger.info(`There is another NEW node. Waiting...`)
           yield util.sleep((Math.random() * 1000) + 5)
           continue
@@ -177,7 +178,7 @@ exports.init = function init() {
         }]
       }
       myself.offset = hashRing.filter(node => node.address === myself.address)[0].offset
-      logger.info(`Node initialized with hash ring: ${hashRing}`)
+      logger.info(`Node initialized with hash ring: ${util.printHashRing(hashRing)}`)
       state = 'PENDING'
       logger.info(`State changed to ${state}`)
     } while(state !== 'PENDING')
@@ -272,6 +273,7 @@ const refreshNodes = co.wrap(function *() {
     return nodes.map(node => node.Address + ':' + node.ServicePort).indexOf(node.address) < 0
   })
 
+  logger.info(`Current hashring: ${util.printHashRing(hashRing)}`)
   if (nodesDown.length === 0) {
     return logger.info('All nodes looks good, moving on..')
   }
@@ -292,6 +294,9 @@ const refreshNodes = co.wrap(function *() {
 
   // Get nodes this node is responsible for again
   const replicatedNodes = util.getNodesIamReplicaFor(hashRing, myself, config.replicas - 1)
+
+  console.log('Previously, I were replica for: ', prevReplicatedNodes)
+  console.log('Now, I am replica for: ', replicatedNodes)
 
   if (!deepEqual(prevReplicatedNodes, replicatedNodes)) {
     logger.info('Replicated nodes has changed, fetching data...')

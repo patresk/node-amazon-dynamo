@@ -134,6 +134,10 @@ exports.getNodesIamReplicaFor = function getReplicasForNode(hashRingArg, node, n
   return _.uniq(nodes)
 }
 
+exports.printHashRing = function printHashRing(hashRing) {
+  return hashRing.map(node => `${node.address}(${node.offset})`).join(' - ')
+}
+
 exports.hash = function hash(string, max) {
   var hash = 0;
   if (string.length == 0) return hash;

@@ -152,6 +152,17 @@ describe('Util', function () {
     })
   })
 
+  describe('print()', function() {
+    it('should print hashring', function() {
+      let hashRing = [
+        { offset: 100, address: 'a' },
+        { offset: 300, address: 'b' },
+        { offset: 500, address: 'c' }
+      ]
+      expect(util.printHashRing(hashRing)).to.deep.equal('a(100) - b(300) - c(500)')
+    })
+  })
+
   describe('Real example', function() {
     it('should work', function() {
       let hashRing = [
