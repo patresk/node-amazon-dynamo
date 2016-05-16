@@ -269,7 +269,7 @@ exports.getNodesForKey = function(id) {
 const refreshNodes = co.wrap(function *() {
   const nodes = yield getNodes()
   const nodesDown = hashRing.filter(node => {
-    nodes.map(node => node.Address + ':' + node.ServicePort).indexOf(node.address) < 0
+    return nodes.map(node => node.Address + ':' + node.ServicePort).indexOf(node.address) < 0
   })
 
   if (nodesDown.length === 0) {
