@@ -15,6 +15,18 @@ Implementation of a course assignment: Distributed program systems @ FIIT
 - sloppy quorum
 - REST API
 
+**Infrastructure Features**
+- multihost config
+- service discovery + health checking - consul, registrator
+- proxy
+	- nginx - loadbalancer
+	- consul-template - reconfiguration
+- distributed logging and business monitoring
+	- filebeat - log forwarding
+	- logstash - log processor
+	- elasticsearch - repository
+	- kibana - graphical dashboard
+
 ## How to setup environment
 
 **Prerequisites**
