@@ -15,19 +15,6 @@ Implementation of a course assignment: Distributed program systems @ FIIT
 - sloppy quorum
 - REST API
 
-**Infrastructure Features**
-- multihost config
-- service discovery + health checking - consul, registrator
-- proxy
-	- nginx - loadbalancer
-	- consul-template - reconfiguration
-- distributed logging and business monitoring
-	- filebeat - log forwarding
-	- logstash - log processor
-	- elasticsearch - repository
-	- kibana - graphical dashboard
-
-
 ## How to setup environment
 
 **Prerequisites**
@@ -68,6 +55,11 @@ git clone https://github.com/patresk/node-amazon-dynamo.git
 
 ```bash
 docker-compose -f /workspace/node-amazon-dynamo/docker/elk/elk.yml up
+```
+Import visualization to Kibana from 
+
+```bash
+/workspace/node-amazon-dynamo/docker/elk/config/kibanaExport.json
 ```
 
 #### MASTER NODE: loadbalancer + consul(master) + registrator + application
