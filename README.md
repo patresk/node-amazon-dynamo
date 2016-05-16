@@ -15,7 +15,7 @@ Implementation of a course assignment: Distributed program systems @ FIIT
 - sloppy quorum
 - REST API
 
-## VirtualBox image
+## How to setup environment
 
 **Prerequisites**
 
@@ -29,10 +29,9 @@ Implementation of a course assignment: Distributed program systems @ FIIT
 a123456
 ```
 
-## Repository
+### Repository
 
-#### Clone this repository into /workspace
-
+Clone this repository into /workspace
 1. Start Terminal
 2. Type following
 
@@ -42,25 +41,25 @@ cd /workspace
 git clone https://github.com/patresk/node-amazon-dynamo.git
 ```
 
-## Running application
+### Running application
 
-### ELK stack
+#### ELK stack
 
-#### Configuration location
+**Configuration location**
 
 ```bash
 /workspace/node-amazon-dynamo/docker/elk/config
 ```
 
-#### Running
+**Running**
 
 ```bash
 docker-compose -f /workspace/node-amazon-dynamo/docker/elk/elk.yml up
 ```
 
-### MASTER NODE: loadbalancer + consul(master) + registrator + application
+#### MASTER NODE: loadbalancer + consul(master) + registrator + application
 
-#### Edit run config for master node
+Edit run config for master node:
 
 ```bash
 ifconfig eth0 | grep "inet addr"			#outputs something like: inet addr:192.168.1.10  Bcast:192.168.1.255  Mask:255.255.255.0
@@ -69,15 +68,15 @@ subl /workspace/node-amazon-dynamo/docker/master.yml
 #Use "inet addr" from previous command for -advertise
 ```
 
-#### Running
+**Running**
 
 ```bash
 docker-compose -f /workspace/node-amazon-dynamo/docker/master.yml up
 ```
 
-### Other nodes: consul + registrator + application
+#### Other nodes: consul + registrator + application
 
-#### Edit run config on each other node
+Edit run config on each other node:
 
 ```bash
 ifconfig eth0 | grep "inet addr"			#outputs something like: inet addr:192.168.1.9  Bcast:192.168.1.255  Mask:255.255.255.0
@@ -86,18 +85,19 @@ subl /workspace/node-amazon-dynamo/docker/node.yml
 #Use "inet addr" from previous command for -advertise and "inet addr" of master node for -join
 ```
 
-#### Running
+**Running**
 
 ```bash
 docker-compose -f /workspace/node-amazon-dynamo/docker/node.yml up
 ```
 
-## Implementation
+## Dynamo implementation
 
 ### REST API
 
 Following REST endpoints ensures Dynamo functionality.
 Always use `application/json` Content-Type header.
+Each endpoint has `quorum` *query* parameter (not in body!), e.g. `GET /v1/:key?quorum=3`. If quorum value provided is higher then replicas number, replicas number is used as quorum.
 
 #### GET /v1/:key
 **Parameters:** none
@@ -156,7 +156,7 @@ A node that is added to the network, performs following steps:
 
 Node that receives the request via any public endpoint above is becoming the coordinator of the request and is responsible to send response to the user. The coordinator performs following steps:
 
-* Hash the key and get the position of the key in the hashring
-* Sends requests to the node responsible for the node + to backups node
-* When quorum is fullfilled, sends reponse to the user
+* 1. Hash the key and get the position of the key in the hashring
+* 2. Sends requests to the node responsible for the node + to backups node
+* 3, When quorum is fullfilled, sends reponse to the user
 
