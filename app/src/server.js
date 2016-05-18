@@ -106,6 +106,14 @@ router.post('/v1/internal/:key', function(req, res) {
   return res.status(200).send()
 })
 
+router.delete('/v1/internal/:key', function(req, res) {
+  req.logger.info(`This node contains a value for the key`)
+  if (store.delete(req.params.key) == 1) {
+    return res.status(404).send()
+  }
+  return res.status(200).send()
+})
+
 router.put('/v1/internal/:key', function(req, res) {
   req.logger.info(`This node contains a value for the key`)
   const item = store.get(req.params.key, req.body.value)
@@ -158,12 +166,16 @@ router.get('/v1/:key', validationMiddleware, function(req, res) {
         if (!sent) {
           sent = true
           if (successfulResponses[0].body && successfulResponses[0].body.value) {
-            return res.status(successfulResponses[0].status).json(successfulResponses.map(response => {
-              return {
-                value: response.body.value,
-                clock: util.encodeClock(response.body.clock)
-              }
-            }))
+            //return res.status(successfulResponses[0].status).json(successfulResponses.map(response => {
+            //  return {
+            //    value: response.body.value,
+            //    clock: util.encodeClock(response.body.clock)
+            //  }
+            //}))
+            return res.status(successfulResponses[0].status).json({
+              value: successfulResponses[0].body.value,
+              clock: util.encodeClock(successfulResponses[0].body.clock)
+            })
           }
           res.status(successfulResponses[0].status).send()
         }
@@ -290,9 +302,44 @@ router.put('/v1/:key', validationMiddleware, function(req, res) {
   })
 })
 
-router.delete('/v1/:id', validationMiddleware, function(req, res) {
-  // Todo: implement
-  res.status(200).send()
+router.delete('/v1/:key', validationMiddleware, function(req, res) {
+  const nodes = discovery.getNodesForKey(req.params.key)
+  const quorum = Math.min(req.query.quorum ? parseInt(req.query.quorum, 10) : config.readQuorum, config.replicas, nodes.length)
+  const responses = []
+  let sent = false
+
+  nodes.forEach(node => {
+    request({
+      url: 'http://' + node.address  + '/v1/internal/' + req.params.key,
+      method: 'DELETE',
+      json: true,
+      headers: { 'x-correlation-id': req.corId },
+      timeout: 4000
+    }, function(err, response, body) {
+      if (err) {
+        req.logger.error(`Forwarded DELETE request failed ${err}`)
+        responses.push({ type: 'err', body: body })
+      } else {
+        req.logger.info(`Forwarded DELETE request successful`)
+        responses.push({ type: 'success', status: response.statusCode, body: body })
+      }
+      let successfulResponses = responses.filter(response => response.type === 'success')
+      if (successfulResponses.length >= quorum) {
+        if (!sent) {
+          sent = true
+          res.status(successfulResponses[0].status).json({ message: 'Requests successful with quorum ' + quorum })
+        }
+      }
+      if (responses.length === nodes.length) {
+        req.logger.info('All responses received.')
+        if (!sent) {
+          sent = true
+          res.status(500).json({ message: 'Quorum not fulfilled.'})
+          req.logger.error('Quorum not fulfilled')
+        }
+      }
+    })
+  })
 })
 
 app.use(router)
